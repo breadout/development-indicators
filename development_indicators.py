@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import wbdata
 import altair
-import base64
+#import base64
 
 #Populate title and sidebar
 st.sidebar.title("Development Indicators")
@@ -48,7 +48,10 @@ def df_indicators():
 
 @st.cache
 def income_levels():
+    ordered_df=pd.DataFrame({'value':['High income','Not classified','Low income','Lower middle income','Low & middle income','Middle income','Upper middle income'],'sort_value':[6,7,1,2,3,4,5]})
     df=pd.DataFrame(wbdata.get_incomelevel())
+    df=df.merge(ordered_df,how='left',on='value')
+    df=df.sort_values('sort_value')
     return df
 
 #Show and retrieve IDs for indicators
@@ -107,6 +110,3 @@ try:
 except Exception:
     pass
     st.text('This indicator could not be queried. Please select another.')
-
-
-
