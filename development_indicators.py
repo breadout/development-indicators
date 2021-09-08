@@ -65,7 +65,7 @@ indicator_id=indicator_id['id'][0]
 try:
     #Create columns for filters
     with st.beta_container():
-        col1, col2 = st.beta_columns(2)
+        col1, col2 = st.columns(2)
         with col2:
             st.subheader('Date Range')
             #start_year=st.selectbox('Starting Year',range(1960,datetime.today().year-1),index=datetime.today().year-1981)
