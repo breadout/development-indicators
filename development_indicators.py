@@ -64,7 +64,7 @@ indicator_id=indicator_id['id'][0]
 #Set error handler
 try:
     #Create columns for filters
-    with st.beta_container():
+    with st.container():
         col1, col2 = st.columns(2)
         with col2:
             st.subheader('Date Range')
