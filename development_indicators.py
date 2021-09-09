@@ -68,8 +68,6 @@ try:
         col1, col2 = st.columns(2)
         with col2:
             st.subheader('Date Range')
-            #start_year=st.selectbox('Starting Year',range(1960,datetime.today().year-1),index=datetime.today().year-1981)
-            #end_year=st.selectbox('Ending Year',range(1960,datetime.today().year),index=datetime.today().year-1961)
             start_year=st.slider('Starting Year',min_value=1960,max_value=datetime.today().year-1,value=datetime.today().year-21)
             end_year=st.slider('Ending Year',min_value=1960,max_value=datetime.today().year-1,value=datetime.today().year-1)
             data_date=datetime(start_year,1,1), datetime(end_year,12,31)
