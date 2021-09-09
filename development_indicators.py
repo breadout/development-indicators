@@ -96,6 +96,7 @@ try:
         st.dataframe(df_query.describe())
     else:
         st.subheader(indicator_dropdown)
+        st.text(filter_dropdown)
         df_query=df_query[df_query['country']==filter_dropdown]
         chart = altair.Chart(df_query.dropna()).mark_line().encode(altair.X('year(date):O',title='Year'), altair.Y('value',title='Value')).configure_mark(color='red').properties(width=800,height=300).configure_axisX(labelAngle=270)
         st.write(chart)
