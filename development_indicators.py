@@ -100,12 +100,6 @@ try:
         st.write(chart)
         df_query['date']=pd.to_datetime(df_query['date']).dt.year
         st.dataframe(df_query)
-        #Download CSV
-        #def get_table_download_link(df_query):
-        #    csv = df_query.to_csv(index=False)
-        #    b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
-        #    href = f'<a href="data:file/csv;base64,{b64}">Download csv file</a>'
-        #st.markdown(get_table_download_link(df_query), unsafe_allow_html=True)
 except Exception:
     pass
     st.text('This indicator could not be queried. Please select another.')
