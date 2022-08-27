@@ -3,7 +3,6 @@ import streamlit as st
 import pandas as pd
 import wbdata
 import altair
-#import base64
 
 #Populate title and sidebar
 st.sidebar.title("Development Indicators")
