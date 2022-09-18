@@ -6,10 +6,25 @@ import requests
 
 st.set_page_config(initial_sidebar_state="expanded")
 
-#Populate title and sidebar
-st.sidebar.title("Development Indicators")
-st.sidebar.text('Sourced from the World Bank')
-st.sidebar.image('icon-leaf-9.jpg',width=75)
+
+def get_countries():
+    url = 'http://api.worldbank.org/v2/sources/' + str(source_id) + '/country/data?format=json&per_page=1000'
+    response = requests.get(url)
+    data = response.json()
+    return data
+
+def get_data(country_id, country_dropdown):
+    url = 'http://api.worldbank.org/v2/sources/' + str(source_id) + '/country/' + str(country_id[0]) + '/series/' + indicator_id + '/data?format=json&per_page=5000'
+    response = requests.get(url)
+    data = response.json()
+    master_list=[]
+    for item in data['source']['data']:
+        for variable in item['variable']:
+            if variable['concept']=='Time':
+                item_list=[country_dropdown, item['value'], variable['value'], date(int(variable['value']),6,30)]
+        master_list.append(item_list)
+    df = pd.DataFrame(master_list, columns=['Country','Value','Year','Date'])
+    return df
 
 #Get indicator topics
 @st.cache
@@ -55,6 +70,11 @@ def get_indicators():
     return indicator_list
 
 
+#Populate title and sidebar
+st.sidebar.title("Development Indicators")
+st.sidebar.text('Sourced from the World Bank')
+st.sidebar.image('icon-leaf-9.jpg',width=75)
+
 #Show and retrieve IDs for indicators
 st.subheader('Indicators')
 indicator_list = get_indicators()
@@ -69,27 +89,6 @@ for item in indicator_list:
 indicator_dropdown=st.selectbox('', sorted([item['name'] for item in indicator_list_topic]))
 indicator_id=[item['id'] for item in indicator_list_topic if item['name']==indicator_dropdown][0]
 source_id=[item['source']['id'] for item in indicator_list_topic if item['name']==indicator_dropdown][0]
-
-
-
-def get_countries():
-    url = 'http://api.worldbank.org/v2/sources/' + str(source_id) + '/country/data?format=json&per_page=1000'
-    response = requests.get(url)
-    data = response.json()
-    return data
-
-def get_data(country_id, country_dropdown):
-    url = 'http://api.worldbank.org/v2/sources/' + str(source_id) + '/country/' + str(country_id[0]) + '/series/' + indicator_id + '/data?format=json&per_page=5000'
-    response = requests.get(url)
-    data = response.json()
-    master_list=[]
-    for item in data['source']['data']:
-        for variable in item['variable']:
-            if variable['concept']=='Time':
-                item_list=[country_dropdown, item['value'], variable['value'], date(int(variable['value']),6,30)]
-        master_list.append(item_list)
-    df = pd.DataFrame(master_list, columns=['Country','Value','Year','Date'])
-    return df
 
 
 #Set error handler
