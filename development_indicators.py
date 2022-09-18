@@ -49,8 +49,6 @@ def get_indicators():
     'FB.AST.LOAN.CB.P3','FB.AST.LOAN.MF.P3','FB.POS.TOTL.P5','SM.EMI.TERT.ZS','WP_time_01.1','WP_time_01.2','WP_time_01.3','WP_time_01.8','WP_time_01.9','WP_time_10.1','WP_time_10.2','WP_time_10.3','WP_time_10.4','WP_time_10.5','WP_time_10.6','WP_time_10.7','WP_time_10.8','WP_time_10.9','WP15163_4.1','WP15163_4.2','WP15163_4.3','WP15163_4.8','WP15163_4.9','SH.DTH.0514','SH.DYN.0514','SH.H2O.SAFE.RU.ZS','SH.H2O.SAFE.UR.ZS','SH.H2O.SAFE.ZS','SH.MLR.INCD','SH.STA.ACSN','SH.STA.ACSN.RU','SH.STA.ACSN.UR','SH.UHC.CONS.TO','SH.UHC.CONS.ZS','SH.VST.OUTP','SH.XPD.EXTR.ZS','SH.XPD.OOPC.TO.ZS','SH.XPD.OOPC.ZS','SH.XPD.PCAP','SH.XPD.PCAP.PP.KD','SH.XPD.PRIV.ZS','SH.XPD.PUBL','SH.XPD.PUBL.GX.ZS','SH.XPD.PUBL.ZS','SH.XPD.TOTL.ZS','SM.EMI.TERT.ZS','SN.ITK.DFCT','SP.DTH.INFR.ZS','SP.DTH.REPT.ZS','IE.PPI.TELE.CD','IE.PPN.TELE.CD',
     'IQ.WEF.PORT.XQ','IT.NET.USER.P2','IT.PRT.NEWS.P3','SH.H2O.SAFE.RU.ZS','SH.H2O.SAFE.UR.ZS','SH.H2O.SAFE.ZS']
     url = 'http://api.worldbank.org/v2/indicator?format=json&per_page=50000'
-    # url = 'http://api.worldbank.org/v2/topic/' + str(topic_id_selected) + '/indicator?format=json&per_page=50000'
-    # url = 'http://api.worldbank.org/v2/indicator?format=json&topic=' + str(topic_id_selected)
     response = requests.get(url)
     data = response.json()
     indicator_list = [item for item in data[1] if item['id'] not in indicators_exclude]
@@ -60,17 +58,14 @@ def get_indicators():
 #Show and retrieve IDs for indicators
 st.subheader('Indicators')
 indicator_list = get_indicators()
-# st.write(indicator_list)
 indicator_list_topic = []
 for item in indicator_list:
     for topic in item['topics']:
-        # st.write(topic)
         try:
             if str(topic['id'])==str(topic_id_selected):
                 indicator_list_topic.append(item)
         except:
             pass
-st.write(indicator_list_topic)
 indicator_dropdown=st.selectbox('', sorted([item['name'] for item in indicator_list_topic]))
 indicator_id=[item['id'] for item in indicator_list_topic if item['name']==indicator_dropdown][0]
 source_id=[item['source']['id'] for item in indicator_list_topic if item['name']==indicator_dropdown][0]
@@ -120,7 +115,7 @@ try:
     chart = altair.Chart(df_query.dropna()).mark_line().encode(altair.X('Date',title='Year'), altair.Y('Value',title='Value')).configure_mark(color='red').properties(width=800,height=300).configure_axisX(labelAngle=270)
     st.write(chart)
     st.write([item['sourceNote'] for item in indicator_list_topic if item['name']==indicator_dropdown][0])
-    df_query.drop(columns=['Date'])
+    df_query=df_query.drop(columns=['Date'])
     st.dataframe(df_query)
 except Exception as e:
     # st.write(e)
