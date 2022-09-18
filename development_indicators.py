@@ -34,14 +34,6 @@ def get_topics():
     data = response.json()[1]
     return data
     
-st.sidebar.subheader('Topics')
-topics = get_topics()
-topic_selected=st.sidebar.radio('',sorted([item['value'] for item in topics]))
-topic_id_selected=[item['id'] for item in topics if item['value']==topic_selected][0]
-topic_note=[item['sourceNote'] for item in topics if item['value']==topic_selected][0]
-st.header(topic_selected.title())
-st.write(topic_note)
-
 #Populate indicator/income dropdowns and exclude indicators that are not able to be queried from the API
 @st.cache 
 def get_indicators():
@@ -74,6 +66,14 @@ def get_indicators():
 st.sidebar.title("Development Indicators")
 st.sidebar.text('Sourced from the World Bank')
 st.sidebar.image('icon-leaf-9.jpg',width=75)
+st.sidebar.subheader('Topics')
+topics = get_topics()
+topic_selected=st.sidebar.radio('',sorted([item['value'] for item in topics]))
+topic_id_selected=[item['id'] for item in topics if item['value']==topic_selected][0]
+topic_note=[item['sourceNote'] for item in topics if item['value']==topic_selected][0]
+st.header(topic_selected.title())
+st.write(topic_note)
+
 
 #Show and retrieve IDs for indicators
 st.subheader('Indicators')
