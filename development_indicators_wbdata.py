@@ -1,35 +1,28 @@
-from datetime import date
+from datetime import datetime
 import streamlit as st
 import pandas as pd
+import wbdata
 import altair
-import requests
-
-st.set_page_config(initial_sidebar_state="expanded")
 
 #Populate title and sidebar
 st.sidebar.title("Development Indicators")
 st.sidebar.text('Sourced from the World Bank')
-st.sidebar.image('icon-leaf-9.jpg',width=75)
+st.sidebar.image('https://icon-library.com/images/icon-leaf/icon-leaf-9.jpg',width=75)
 
 #Get indicator topics
 @st.cache
-def get_topics():
-    url = "http://api.worldbank.org/v2/topic?format=json"
-    response = requests.get(url)
-    data = response.json()[1]
-    return data
-    
+def topic_id():
+    return pd.DataFrame(wbdata.get_topic(),columns=['value','id']).sort_values(by='value').reset_index()
 st.sidebar.subheader('Topics')
-topics = get_topics()
-topic_selected=st.sidebar.radio('',sorted([item['value'] for item in topics]))
-topic_id_selected=[item['id'] for item in topics if item['value']==topic_selected][0]
-topic_note=[item['sourceNote'] for item in topics if item['value']==topic_selected][0]
+topic_selected=st.sidebar.radio('',topic_id()['value'])
+topic_id_selected=topic_id()[topic_id()['value'].str.contains(topic_selected, na=False)]
+topic_note=[i['sourceNote'] for i in wbdata.get_topic(topic_id=topic_id_selected['id'].tolist())][0]
 st.header(topic_selected.title())
 st.write(topic_note)
 
 #Populate indicator/income dropdowns and exclude indicators that are not able to be queried from the API
 @st.cache 
-def get_indicators():
+def df_indicators():
     indicators_exclude=['EA.PRD.AGRI.KD','EG.NSF.ACCS.RU.ZS','SH.H2O.SAFE.RU.ZS','SH.STA.ACSN.RU','SI.POV.RUGP','SI.POV.RUHC','SL.EMP.INSV.FE.ZS','SL.ISV.IFRM.FE.ZS','SL.ISV.IFRM.MA.ZS','SL.ISV.IFRM.ZS','SL.MNF.WAGE.FM','SL.TLF.PART.TL.FE.ZS','SL.TLF.PRIM.FE.ZS','SL.TLF.PRIM.MA.ZS','SL.TLF.PRIM.ZS','SL.TLF.SECO.FE.ZS','SL.TLF.SECO.MA.ZS','SL.TLF.SECO.ZS','SL.TLF.TERT.FE.ZS','SL.TLF.TERT.MA.ZS','SL.TLF.TERT.ZS','SL.UEM.LTRM.FE.ZS','SL.UEM.LTRM.MA.ZS','SL.UEM.LTRM.ZS','SL.UEM.PRIM.FE.ZS','SL.UEM.PRIM.MA.ZS','SL.UEM.PRIM.ZS','SL.UEM.SECO.FE.ZS','SL.UEM.SECO.MA.ZS','SL.UEM.TERT.FE.ZS','SL.UEM.TERT.ZS','SI.POV.2DAY','SI.POV.GAP2','SI.POV.NAGP','SI.POV.RUGP','SI.POV.RUHC','SI.POV.URGP','SI.POV.URHC','SI.SPR.PC40.05','SI.SPR.PCAP.05','IC.EXP.COST.CD','IC.EXP.DOCS','IC.EXP.DURS','IC.IMP.COST.CD','IC.IMP.DOCS','IC.IMP.DURS',
     'IE.PPI.TELE.CD','IQ.WEF.CUST.XQ','SG.JOB.NOPN.EQ','SG.LAW.CHMR','SG.LAW.LEVE.PU','SG.MMR.LEVE.EP','SG.NOD.CONS','VC.PKP.TOTL.UN','SL.EMP.INSV.FE.ZS','EG.NSF.ACCS.UR.ZS','SH.H2O.SAFE.UR.ZS','SH.STA.ACSN.UR','SI.POV.URGP','SI.POV.URHC','SG.JOB.NOPN.EQ','SG.LAW.CHMR','SG.LAW.LEVE.PU','SG.MMR.LEVE.EP','SG.NOD.CONS','SL.EMP.INSV.FE.ZS','SL.MNF.WAGE.FM','SL.TLF.PART.TL.FE.ZS','SL.TLF.PRIM.FE.ZS','SL.TLF.PRIM.MA.ZS','SL.TLF.SECO.FE.ZS','SL.TLF.SECO.MA.ZS','SL.TLF.TERT.FE.ZS','SL.TLF.TERT.MA.ZS','SL.UEM.LTRM.FE.ZS','SL.UEM.LTRM.MA.ZS','SL.UEM.PRIM.FE.ZS','SL.UEM.PRIM.MA.ZS','SL.UEM.SECO.FE.ZS','SL.UEM.SECO.MA.ZS','SL.UEM.TERT.FE.ZS','WP_time_01.2','WP_time_01.3','WP15163_4.2','WP15163_4.3','SH.H2O.SAFE.RU.ZS','SH.H2O.SAFE.UR.ZS','SH.H2O.SAFE.ZS','SH.MLR.INCD','SH.STA.ACSN','DT.DIS.IDAG.CD','DT.DOD.MDRI.CD',
     'SH.STA.ACSN','BX.GRT.EXTA.CD.DT','BX.GRT.TECH.CD.DT','BX.KLT.DINV.CD.DT','BX.KLT.DREM.CD.DT','BX.PEF.TOTL.CD.DT','DT.AMT.BLAT.CD','DT.AMT.BLAT.GG.CD','DT.AMT.BLAT.OPS.CD','DT.AMT.BLAT.PRVG.CD','DT.AMT.BLAT.PS.CD','DT.AMT.BLTC.CD','DT.AMT.BLTC.GG.CD','DT.AMT.BLTC.OPS.CD','DT.AMT.BLTC.PRVG.CD','DT.AMT.BLTC.PS.CD','DT.AMT.DEGG.CD','DT.AMT.DEPS.CD','DT.AMT.DIMF.CD','DT.AMT.DLTF.CD','DT.AMT.DLXF.CD','DT.AMT.DOPS.CD','DT.AMT.DPNG.CD','DT.AMT.DPPG.CD','DT.AMT.MIBR.CD','DT.AMT.MIDA.CD','DT.AMT.MLAT.CD','DT.AMT.MLAT.GG.CD','DT.AMT.MLAT.OPS.CD','DT.AMT.MLAT.PRVG.CD','DT.AMT.MLAT.PS.CD','DT.AMT.MLTC.CD','DT.AMT.MLTC.GG.CD','DT.AMT.MLTC.OPS.CD','DT.AMT.MLTC.PRVG.CD','DT.AMT.MLTC.PS.CD','DT.AMT.OFFT.CD','DT.AMT.OFFT.GG.CD','DT.AMT.OFFT.OPS.CD','DT.AMT.OFFT.PRVG.CD','DT.AMT.OFFT.PS.CD','DT.AMT.PBND.CD','DT.AMT.PBND.GG.CD',
@@ -48,81 +41,64 @@ def get_indicators():
     'DT.UND.PRVT.CD','BX.KLT.DREM.CD.DT','DT.DOD.DECT.EX.ZS','DT.INT.DECT.EX.ZS','DT.INT.DECT.GN.ZS','NE.CON.PETC.CD','NE.CON.PETC.CN','NE.CON.PETC.KD','NE.CON.PETC.KD.ZG','NE.CON.PETC.KN','NE.CON.PETC.ZS','NE.CON.TETC.CD','NE.CON.TETC.CN','NE.CON.TETC.KD','NE.CON.TETC.KD.ZG','NE.CON.TETC.KN','NE.CON.TETC.ZS','NV.SRV.TETC.CD','NV.SRV.TETC.CN','NV.SRV.TETC.KD','NV.SRV.TETC.KD.ZG','NV.SRV.TETC.KN','NV.SRV.TETC.ZS','PA.NUS.PPP.05','PA.NUS.PRVT.PP.05','SE.TER.ENRL.FE.ZS','SE.XPD.MPRM.ZS','SE.XPD.MSEC.ZS','SE.XPD.MTER.ZS','SE.XPD.MTOT.ZS','SL.TLF.PRIM.FE.ZS','SL.TLF.PRIM.MA.ZS','SL.TLF.PRIM.ZS','SL.TLF.SECO.FE.ZS','SL.TLF.SECO.MA.ZS','SL.TLF.SECO.ZS','SL.TLF.TERT.FE.ZS','SL.TLF.TERT.MA.ZS','SL.TLF.TERT.ZS','SM.EMI.TERT.ZS','EG.NSF.ACCS.RU.ZS','EG.NSF.ACCS.UR.ZS','EG.NSF.ACCS.ZS','EG.NSF.ACCS.ZS','BX.KLT.DREM.CD.DT',
     'FB.AST.LOAN.CB.P3','FB.AST.LOAN.MF.P3','FB.POS.TOTL.P5','SM.EMI.TERT.ZS','WP_time_01.1','WP_time_01.2','WP_time_01.3','WP_time_01.8','WP_time_01.9','WP_time_10.1','WP_time_10.2','WP_time_10.3','WP_time_10.4','WP_time_10.5','WP_time_10.6','WP_time_10.7','WP_time_10.8','WP_time_10.9','WP15163_4.1','WP15163_4.2','WP15163_4.3','WP15163_4.8','WP15163_4.9','SH.DTH.0514','SH.DYN.0514','SH.H2O.SAFE.RU.ZS','SH.H2O.SAFE.UR.ZS','SH.H2O.SAFE.ZS','SH.MLR.INCD','SH.STA.ACSN','SH.STA.ACSN.RU','SH.STA.ACSN.UR','SH.UHC.CONS.TO','SH.UHC.CONS.ZS','SH.VST.OUTP','SH.XPD.EXTR.ZS','SH.XPD.OOPC.TO.ZS','SH.XPD.OOPC.ZS','SH.XPD.PCAP','SH.XPD.PCAP.PP.KD','SH.XPD.PRIV.ZS','SH.XPD.PUBL','SH.XPD.PUBL.GX.ZS','SH.XPD.PUBL.ZS','SH.XPD.TOTL.ZS','SM.EMI.TERT.ZS','SN.ITK.DFCT','SP.DTH.INFR.ZS','SP.DTH.REPT.ZS','IE.PPI.TELE.CD','IE.PPN.TELE.CD',
     'IQ.WEF.PORT.XQ','IT.NET.USER.P2','IT.PRT.NEWS.P3','SH.H2O.SAFE.RU.ZS','SH.H2O.SAFE.UR.ZS','SH.H2O.SAFE.ZS']
-    url = 'http://api.worldbank.org/v2/indicator?format=json&per_page=50000'
-    # url = 'http://api.worldbank.org/v2/topic/' + str(topic_id_selected) + '/indicator?format=json&per_page=50000'
-    # url = 'http://api.worldbank.org/v2/indicator?format=json&topic=' + str(topic_id_selected)
-    response = requests.get(url)
-    data = response.json()
-    indicator_list = [item for item in data[1] if item['id'] not in indicators_exclude]
-    return indicator_list
+    df=pd.DataFrame(wbdata.get_indicator(topic=topic_id_selected['id'].tolist()),columns=['id','name']).sort_values(by='name').reset_index()
+    df=df.loc[~df['id'].isin(indicators_exclude)].reset_index(drop=True)
+    return df
 
+@st.cache
+def income_levels():
+    ordered_df=pd.DataFrame({'value':['High income','Not classified','Low income','Lower middle income','Low & middle income','Middle income','Upper middle income'],'sort_value':[6,7,1,2,3,4,5]})
+    df=pd.DataFrame(wbdata.get_incomelevel())
+    df=df.merge(ordered_df,how='left',on='value')
+    df=df.sort_values('sort_value')
+    return df
 
 #Show and retrieve IDs for indicators
 st.subheader('Indicators')
-indicator_list = get_indicators()
-# st.write(indicator_list)
-indicator_list_topic = []
-for item in indicator_list:
-    for topic in item['topics']:
-        # st.write(topic)
-        try:
-            if str(topic['id'])==str(topic_id_selected):
-                indicator_list_topic.append(item)
-        except:
-            pass
-st.write(indicator_list_topic)
-indicator_dropdown=st.selectbox('', sorted([item['name'] for item in indicator_list_topic]))
-indicator_id=[item['id'] for item in indicator_list_topic if item['name']==indicator_dropdown][0]
-source_id=[item['source']['id'] for item in indicator_list_topic if item['name']==indicator_dropdown][0]
-
-
-
-def get_countries():
-    url = 'http://api.worldbank.org/v2/sources/' + str(source_id) + '/country/data?format=json&per_page=1000'
-    response = requests.get(url)
-    data = response.json()
-    return data
-
-def get_data(country_id, country_dropdown):
-    url = 'http://api.worldbank.org/v2/sources/' + str(source_id) + '/country/' + str(country_id[0]) + '/series/' + indicator_id + '/data?format=json&per_page=5000'
-    response = requests.get(url)
-    data = response.json()
-    master_list=[]
-    for item in data['source']['data']:
-        for variable in item['variable']:
-            if variable['concept']=='Time':
-                item_list=[country_dropdown, item['value'], variable['value'], date(int(variable['value']),6,30)]
-        master_list.append(item_list)
-    df = pd.DataFrame(master_list, columns=['Country','Value','Year','Date'])
-    return df
-
+indicator_dropdown=st.selectbox('',df_indicators()['name'])
+indicator_id=df_indicators()
+indicator_id=indicator_id[indicator_id['name']==indicator_dropdown].reset_index(drop=True)
+indicator_id=indicator_id['id'][0]
 
 #Set error handler
 try:
     #Create columns for filters
     with st.container():
         col1, col2 = st.columns(2)
-        #Date range filter
+        with col2:
+            st.subheader('Date Range')
+            start_year=st.slider('Starting Year',min_value=1960,max_value=datetime.today().year-1,value=datetime.today().year-21)
+            end_year=st.slider('Ending Year',min_value=1960,max_value=datetime.today().year-1,value=datetime.today().year-1)
+            data_date=datetime(start_year,1,1), datetime(end_year,12,31)
         with col1:
             st.subheader("Filter by")
-            #Populate data table and populate country list dropdown
-            country_raw = get_countries()
-            country_list=sorted([country['value'] for country in country_raw['source'][0]['concept'][0]['variable']])
-            # if 'World' in country_list:
-            country_list_default = country_list.index('World') if 'World' in country_list else 0
-            country_dropdown=st.selectbox('Country or Region',country_list,index=country_list_default)
-            country_id=[country['id'] for country in country_raw['source'][0]['concept'][0]['variable'] if country['value']==country_dropdown]
-
+            filter_type_dropdown=st.radio('',['Country or Region','Income Level'])
+            if filter_type_dropdown=='Income Level':
+                filter_dropdown=st.selectbox('Income Level',income_levels()['value'])
+                income_id=income_levels()
+                income_id=income_id[income_id['value']==filter_dropdown].reset_index()
+                income_id=income_id['id'][0]
+                countries=[i['id'] for i in wbdata.get_country(incomelevel=income_id)]
+                indicators={indicator_id: indicator_dropdown}
+                df_query=wbdata.get_dataframe(indicators,data_date=data_date,country=countries,convert_date=True)
+            else:
+                #Populate data table and populate country list dropdown
+                df_query=wbdata.get_series(indicator_id,data_date=data_date,convert_date=True).to_frame().reset_index()
+                df_query_filter_na=df_query.dropna()
+                country_list=df_query_filter_na['country'].unique()
+                filter_dropdown=st.selectbox('Country or Region',country_list) 
+    
     #Populate tables and graphs
-    st.subheader(indicator_dropdown)
-    st.text(country_dropdown)
-    df_query=get_data(country_id, country_dropdown) 
-    chart = altair.Chart(df_query.dropna()).mark_line().encode(altair.X('Date',title='Year'), altair.Y('Value',title='Value')).configure_mark(color='red').properties(width=800,height=300).configure_axisX(labelAngle=270)
-    st.write(chart)
-    st.write([item['sourceNote'] for item in indicator_list_topic if item['name']==indicator_dropdown][0])
-    df_query.drop(columns=['Date'])
-    st.dataframe(df_query)
-except Exception as e:
-    # st.write(e)
+    if filter_type_dropdown=='Income Level':
+        st.dataframe(df_query.describe())
+    else:
+        st.subheader(indicator_dropdown)
+        st.text(filter_dropdown)
+        df_query=df_query[df_query['country']==filter_dropdown]
+        chart = altair.Chart(df_query.dropna()).mark_line().encode(altair.X('year(date):O',title='Year'), altair.Y('value',title='Value')).configure_mark(color='red').properties(width=800,height=300).configure_axisX(labelAngle=270)
+        st.write(chart)
+        df_query['date']=pd.to_datetime(df_query['date']).dt.year
+        st.dataframe(df_query)
+except Exception:
     pass
     st.text('This indicator could not be queried. Please select another.')
