@@ -3,7 +3,4 @@ streamlit
 pandas
 datetime
 altair
-<<<<<<< HEAD
-=======
 requests
->>>>>>> ee410802e88a29c05832ace79e9809597a0bb00e
