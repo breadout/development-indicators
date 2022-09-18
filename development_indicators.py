@@ -86,7 +86,7 @@ for item in indicator_list:
                 indicator_list_topic.append(item)
         except:
             pass
-indicator_dropdown=st.selectbox('', sorted([item['name'] for item in indicator_list_topic]))
+indicator_dropdown=st.selectbox('Select an indicator', sorted([item['name'] for item in indicator_list_topic]))
 indicator_id=[item['id'] for item in indicator_list_topic if item['name']==indicator_dropdown][0]
 source_id=[item['source']['id'] for item in indicator_list_topic if item['name']==indicator_dropdown][0]
 
