@@ -17,17 +17,37 @@ def get_data(country_id, country_dropdown):
     url = 'http://api.worldbank.org/v2/sources/' + str(source_id) + '/country/' + str(country_id[0]) + '/series/' + indicator_id + '/data?format=json&per_page=5000'
     response = requests.get(url)
     data = response.json()
+    master_data = data['source']['data']
+    page_total = data['pages']
     master_list=[]
-    for item in data['source']['data']:
+    master_versions = []
+    if page_total>1:
+        for page in range(2,page_total+1):
+            print(page)
+            url = 'http://api.worldbank.org/v2/sources/' + str(source_id) + '/country/' + str(country_id[0]) + '/series/' + indicator_id + '/data?format=json&per_page=5000&page=' + str(page)
+            response = requests.get(url)
+            data = response.json()
+            master_data = master_data + data['source']['data']
+    for item in master_data:
+        version = ''
         for variable in item['variable']:
+            if variable['concept']=='Version':
+                version = variable['id']
+                if version not in master_versions and item['value']!=None and version != '':
+                    master_versions.append(version)
             if variable['concept']=='Time':
-                item_list=[country_dropdown, item['value'], variable['value'], date(int(variable['value']),6,30)]
+                date_query = date(int(variable['value']),6,30)
+        item_list=[country_dropdown, item['value'], variable['value'], date_query, version]
         master_list.append(item_list)
-    df = pd.DataFrame(master_list, columns=['Country','Value','Year','Date'])
+    
+    df = pd.DataFrame(master_list, columns=['Country','Value','Year','Date','Version'])
+    version_to_filter = sorted(master_versions, reverse=True)
+    if len(version_to_filter)>0:
+        df = df[df['Version']==version_to_filter[0]]
     return df
 
 #Get indicator topics
-@st.cache
+@st.cache_data
 def get_topics():
     url = "http://api.worldbank.org/v2/topic?format=json"
     response = requests.get(url)
@@ -35,7 +55,7 @@ def get_topics():
     return data
     
 #Populate indicator/income dropdowns and exclude indicators that are not able to be queried from the API
-@st.cache 
+@st.cache_data
 def get_indicators():
     indicators_exclude=['EA.PRD.AGRI.KD','EG.NSF.ACCS.RU.ZS','SH.H2O.SAFE.RU.ZS','SH.STA.ACSN.RU','SI.POV.RUGP','SI.POV.RUHC','SL.EMP.INSV.FE.ZS','SL.ISV.IFRM.FE.ZS','SL.ISV.IFRM.MA.ZS','SL.ISV.IFRM.ZS','SL.MNF.WAGE.FM','SL.TLF.PART.TL.FE.ZS','SL.TLF.PRIM.FE.ZS','SL.TLF.PRIM.MA.ZS','SL.TLF.PRIM.ZS','SL.TLF.SECO.FE.ZS','SL.TLF.SECO.MA.ZS','SL.TLF.SECO.ZS','SL.TLF.TERT.FE.ZS','SL.TLF.TERT.MA.ZS','SL.TLF.TERT.ZS','SL.UEM.LTRM.FE.ZS','SL.UEM.LTRM.MA.ZS','SL.UEM.LTRM.ZS','SL.UEM.PRIM.FE.ZS','SL.UEM.PRIM.MA.ZS','SL.UEM.PRIM.ZS','SL.UEM.SECO.FE.ZS','SL.UEM.SECO.MA.ZS','SL.UEM.TERT.FE.ZS','SL.UEM.TERT.ZS','SI.POV.2DAY','SI.POV.GAP2','SI.POV.NAGP','SI.POV.RUGP','SI.POV.RUHC','SI.POV.URGP','SI.POV.URHC','SI.SPR.PC40.05','SI.SPR.PCAP.05','IC.EXP.COST.CD','IC.EXP.DOCS','IC.EXP.DURS','IC.IMP.COST.CD','IC.IMP.DOCS','IC.IMP.DURS',
     'IE.PPI.TELE.CD','IQ.WEF.CUST.XQ','SG.JOB.NOPN.EQ','SG.LAW.CHMR','SG.LAW.LEVE.PU','SG.MMR.LEVE.EP','SG.NOD.CONS','VC.PKP.TOTL.UN','SL.EMP.INSV.FE.ZS','EG.NSF.ACCS.UR.ZS','SH.H2O.SAFE.UR.ZS','SH.STA.ACSN.UR','SI.POV.URGP','SI.POV.URHC','SG.JOB.NOPN.EQ','SG.LAW.CHMR','SG.LAW.LEVE.PU','SG.MMR.LEVE.EP','SG.NOD.CONS','SL.EMP.INSV.FE.ZS','SL.MNF.WAGE.FM','SL.TLF.PART.TL.FE.ZS','SL.TLF.PRIM.FE.ZS','SL.TLF.PRIM.MA.ZS','SL.TLF.SECO.FE.ZS','SL.TLF.SECO.MA.ZS','SL.TLF.TERT.FE.ZS','SL.TLF.TERT.MA.ZS','SL.UEM.LTRM.FE.ZS','SL.UEM.LTRM.MA.ZS','SL.UEM.PRIM.FE.ZS','SL.UEM.PRIM.MA.ZS','SL.UEM.SECO.FE.ZS','SL.UEM.SECO.MA.ZS','SL.UEM.TERT.FE.ZS','WP_time_01.2','WP_time_01.3','WP15163_4.2','WP15163_4.3','SH.H2O.SAFE.RU.ZS','SH.H2O.SAFE.UR.ZS','SH.H2O.SAFE.ZS','SH.MLR.INCD','SH.STA.ACSN','DT.DIS.IDAG.CD','DT.DOD.MDRI.CD',
@@ -111,12 +131,15 @@ try:
     st.subheader(indicator_dropdown)
     st.text(country_dropdown)
     df_query=get_data(country_id, country_dropdown) 
+    df_query['Indicator'] = indicator_dropdown
+    if pd.isna(df_query['Value'].max()):
+        st.error('No data available. Try selecting a different country or region.')
     chart = altair.Chart(df_query.dropna()).mark_line().encode(altair.X('Date',title='Year'), altair.Y('Value',title='Value')).configure_mark(color='red').properties(width=800,height=300).configure_axisX(labelAngle=270)
     st.write(chart)
     st.write([item['sourceNote'] for item in indicator_list_topic if item['name']==indicator_dropdown][0])
     df_query=df_query.drop(columns=['Date'])
     st.dataframe(df_query)
 except Exception as e:
-    # st.write(e)
+    st.error(e)
     pass
     st.text('This indicator could not be queried. Please select another.')
